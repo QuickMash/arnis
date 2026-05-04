@@ -47,6 +47,7 @@ pub fn generate_world_with_options(
         options.format,
         options.level_name.clone(),
         options.spawn_point,
+        args.disable_height_limit,
     );
     let ground = Arc::new(ground);
 
@@ -80,7 +81,6 @@ pub fn generate_world_with_options(
     // road or path surface. Uses the same Bresenham + block_range geometry as
     // generate_highways_internal, so the bitmap is a 1:1 match of what gets placed.
     // Amenity processors use this for O(1) nearest-road-block lookups.
-    // TODO Use this data to create overhanging traffic signals.
     let road_mask = highways::collect_road_surface_coords(&elements, &xzbbox, args.scale);
 
     // Process all elements (no longer need to partition boundaries)
@@ -175,6 +175,7 @@ pub fn generate_world_with_options(
                         args,
                         &highway_connectivity,
                         &flood_fill_cache,
+                        &road_mask,
                     );
                 } else if way.tags.contains_key("landuse") {
                     landuse::generate_landuse(
@@ -270,6 +271,7 @@ pub fn generate_world_with_options(
                         args,
                         &highway_connectivity,
                         &flood_fill_cache,
+                        &road_mask,
                     );
                 } else if node.tags.contains_key("tourism") {
                     tourisms::generate_tourisms(&mut editor, node);
@@ -370,8 +372,8 @@ pub fn generate_world_with_options(
     }
 
     if let Some(start) = generation_start {
-        let gen_secs = start.elapsed().as_secs();
-        eprintln!("[BENCHMARK] generation_time={gen_secs}");
+        let gen_ms = start.elapsed().as_millis();
+        eprintln!("[BENCHMARK] generation_time_ms={gen_ms}");
     }
 
     emit_gui_progress_update(99.0, "Finalizing world...");
